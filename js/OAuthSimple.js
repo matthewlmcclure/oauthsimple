@@ -292,7 +292,7 @@ if (OAuthSimple === undefined)
             var j,pName,pLength,result = 'OAuth ';
             for (pName in this._parameters)
             {
-                if (pName.match(/^oauth/) === undefined) {
+                if (! pName.match(/^oauth/)) {
                     continue;
                     }
                 if ((this._parameters[pName]) instanceof Array)
@@ -424,7 +424,10 @@ if (OAuthSimple === undefined)
                 //skip secrets.
                 if (paramName.match(/\w+_secret/)) {
                     continue;
-                    }
+                }
+                if (paramName === "oauth_signature") {
+                    continue;
+                }
                 if (this._parameters[paramName] instanceof Array)
                 {
                     var sorted = this._parameters[paramName].sort(),
