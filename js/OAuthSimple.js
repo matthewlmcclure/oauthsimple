@@ -272,6 +272,7 @@ if (OAuthSimple === undefined)
                 parameters: this._parameters,
                 signature: this._oauthEscape(this._parameters['oauth_signature']),
                 signed_url: this._path + '?' + this._normalizedParameters(),
+                signature_base_string: this._signatureBaseString(),
                 header: this.getHeaderString()
             };
         };
@@ -448,6 +449,10 @@ if (OAuthSimple === undefined)
             return elements.join('&');
         };
 
+        self._signatureBaseString = function() {
+            return this._oauthEscape(this._action)+'&'+this._oauthEscape(this._path)+'&'+this._oauthEscape(this._normalizedParameters());
+        };
+
         self._generateSignature = function() {
 
             var secretKey = this._oauthEscape(this._secrets.shared_secret)+'&'+
@@ -458,8 +463,7 @@ if (OAuthSimple === undefined)
             }
             if (this._parameters['oauth_signature_method'] == 'HMAC-SHA1')
             {
-                var sigString = this._oauthEscape(this._action)+'&'+this._oauthEscape(this._path)+'&'+this._oauthEscape(this._normalizedParameters());
-                return this.b64_hmac_sha1(secretKey,sigString);
+                return this.b64_hmac_sha1(secretKey,this._signatureBaseString());
             }
             return null;
         };
