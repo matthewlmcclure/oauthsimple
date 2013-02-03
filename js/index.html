@@ -1,20 +1,64 @@
 <html>
     <head>
-        <title>OAuthSimple test document</title>
+        <title>OAuthSimple Test Document</title>
+        <style type="text/css">
+            #compute_signature { text-decoration: underline; }
+            label {
+                width: 150px;
+                float: left;
+                text-align: right;
+            }
+            input[type=text] {
+                width: 400px;
+            }
+            textarea {
+                width: 400px;
+                height: 200px;
+            }
+            input[type=radio]+label {
+                float: none;
+            }
+        </style>
+        <script src="OAuthSimple.js" ></script>
+        <script src="Uri.js" ></script>
     </head>
     <body>
-        <h1>test document</h1>
+        <h1>OAuthSimple Test Document</h1>
 
-        <ol>
-        <li><a id="sample1">First Link</a>
-        <li><a id="sample2">Second Link</a>
-        <li><a id="sample3">Third Link</a>
-        </ol>
-        <div id="hasConsole" style="display:none">Psst! Open your console for the output objects.</div>
+        <p>This page uses the <a href="OAuthSimple.js">OAuthSimple
+        JavaScript client</a> to compute OAuth 1 signatures. It doesn't
+        send your secrets to any servers. It just uses them in your
+        browser.</p>
 
-        <a href="OAuthSimple.js">The javascript file</a>
+        <form>
+            Client credentials (consumer key and secret)<br/>
+            <label>Token</label><input name="client_token" type="text" /><br/>
+            <label>Secret</label><input name="client_secret" type="text" /><br/>
+            Token credentials (access token and secret)<br/>
+            <label>Token</label><input name="token_token" type="text" /><br/>
+            <label>Secret</label><input name="token_secret" type="text" /><br/>
+            <label>HTTP method</label><input name="http_method" type="text" /><br/>
+            <label>URL</label><input name="url" type="text" /><br/>
+            <label>Content-Type</label><input name="content_type" type="text" /><br/>
+            <label>Request entity body</label><textarea name="body" type="text"></textarea><br/>
+            <label><a href="https://tools.ietf.org/html/rfc5849#section-3.3">Nonce</a></label><input name="nonce" type="text" /><br/>
+            <label>Timestamp</label><input name="timestamp" type="text" /><br />
+            <label>OAuth version</label><input name="oauth_version" type="text" value="1.0" /><br/>
+            <a href="https://tools.ietf.org/html/rfc5849#section-3.5">Parameter transmission</a>
+            <input name="parameter_transmission" type="radio" value="authorization_header" checked="checked" /><label>Authorization header</label>
+            <input name="parameter_transmission" type="radio" value="uri_query" /><label>URI query</label>
+            <input name="parameter_transmission" type="radio" value="request_entity_body" /><label>Request entity body</label><br/>
+        </form>
 
-        <script src="OAuthSimple.js" ></script>
+        <div id="compute_signature">Compute signature</div>
+
+        Signature base string: <span id="signature_base_string"></span><br/>
+        Signature: <span id="signature"></span><br/>
+        Request<br/>
+        Start line: <span id="request_start_line"></span><br/>
+        Headers: <div id="request_headers"></div>
+        Entity body: <div id="request_entity_body"></div>
+
         <script>
 
         // To get results in all their magnificent glory (rather than some error)
@@ -22,62 +66,108 @@
         // Don't have a magical Netflix API key yet?
         // http://developer.netflix.com
         //
-            // Some easy defines
-            var apiKey = "nO-woRk";
-            var sharedSecret = "ExAMple01";
-            var accessToken = "This-Will-NOT.wOrk.EIthEr";
-            var tokenSecret = "N0sOuP4U";
+            var compute = function() {
 
-            var path="http://api.netflix.com/catalog/titles"
-            var argumentsAsString = "term=rat&expand=format,synopsis&max_results=1";
-            var argumentsAsObject = {
-                term:'rat',
-                expand:'formats,synopsis',
-                max_results: '1' 
-            };
+                var signatureBaseStringElt = document.getElementById("signature_base_string");
+                var signatureElt = document.getElementById("signature");
+                var requestStartLineElt = document.getElementById("request_start_line");
+                var requestHeadersElt = document.getElementById("request_headers");
+                var requestEntityBodyElt = document.getElementById("request_entity_body");
 
-            if (apiKey == "nO-woRk")
-                alert('Remember, the key/values defined here need to be changed to valid values before the API calls will work. Currently, these links are only for demonstration purposes.');
+                signatureBaseStringElt.innerText = "";
+                signatureElt.innerText = "";
+                requestStartLineElt.innerText = "";
+                requestHeadersElt.innerText = "";
+                requestEntityBodyElt.innerText = "";
 
+                // Some easy defines
+                var apiKey = document.getElementsByName("client_token")[0].value;
+                var sharedSecret = document.getElementsByName("client_secret")[0].value;
+                var accessToken = document.getElementsByName("token_token")[0].value;
+                var tokenSecret = document.getElementsByName("token_secret")[0].value;
+                var nonce = document.getElementsByName("nonce")[0].value;
+                var timestamp = document.getElementsByName("timestamp")[0].value;
+                var oauth_version = document.getElementsByName("oauth_version")[0].value;
 
-            // Test 1 ===== The hard way...
-            var oauth = OAuthSimple(apiKey,sharedSecret);
-            oauth.setParameters(argumentsAsString);
-                oauth.setPath(path);
-                var sample1Results = oauth.sign();
-            try {
-                console.debug('Sample 1',sample1Results);
-            } catch(e) {};
+                var httpMethod = document.getElementsByName("http_method")[0].value;
+                var uri = new Uri(document.getElementsByName("url")[0].value);
 
-            // Test 2 ===== the semi-easy way.
-            OAuthSimple().reset();
-            var oauth2 = OAuthSimple(apiKey,sharedSecret);
-            var sample2Results = oauth2.sign({action:'GET',
-                                             path:path,
-                                             method:'HMAC-SHA1',
-                                             parameters:argumentsAsObject});
-            try {                                             
-                console.debug('Sample 2',sample2Results);
-            } catch (e) {};
+                var contentType = document.getElementsByName("content_type")[0].value;
+                var body = document.getElementsByName("body")[0].value;
 
-            // Test 3 ===== the totally easy way.
-            OAuthSimple().reset();
-            var sample3Results = (new OAuthSimple()).sign({path:path,
-                                                  parameters:argumentsAsString,
-                                                  signatures:{
-                                                    'consumer_key':apiKey, 'shared_secret': sharedSecret,
-                                                    'access_token':accessToken,'access_secret':tokenSecret}});
-             try {
-                console.debug('Sample 3',sample3Results);
+                var queryPairsToQueryObject = function(pairs) {
+                    var o = {};
+                    for (i = 0; i < pairs.length; i++) {
+                        decodedName = decodeURIComponent(pairs[i][0].replace(/\+/g, " "));
+                        decodedValue = decodeURIComponent(pairs[i][1].replace(/\+/g, " "));
+                        o[decodedName] = decodedValue;
+                    }
+                    return o;
+                };
+
+                var pathUri = uri.clone().setQuery("").setAnchor("");
+                var path = pathUri.toString();
+                var parameterPairs = uri.queryPairs;
+                if (contentType === "application/x-www-form-urlencoded") {
+                    var bodyPairs = new Uri("?" + body).queryPairs;
+                    parameterPairs = parameterPairs.concat(bodyPairs);
+                }
+
+                var argumentsAsObject = queryPairsToQueryObject(parameterPairs);
+                argumentsAsObject["oauth_nonce"] = nonce;
+                argumentsAsObject["oauth_timestamp"] = timestamp;
+                argumentsAsObject["oauth_version"] = oauth_version;
+
+                var contentType = document.getElementsByName("content_type")[0].value;
+                var body = document.getElementsByName("body")[0].value;
+
+                var signedResult = (new OAuthSimple()).sign({
+                    action:httpMethod,
+                    path:path,
+                    parameters:argumentsAsObject,
+                    signatures:{
+                      'consumer_key':apiKey, 'shared_secret': sharedSecret,
+                      'access_token':accessToken,'access_secret':tokenSecret,
+                    }}
+                );
+
+                try {
+                    console.debug('result',signedResult);
                 } catch (e) {};
 
-            // Now fill out the samples with our handiwork:
-            document.getElementById('sample1').href = sample1Results.signed_url;
-            document.getElementById('sample2').href = sample2Results.signed_url;
-            document.getElementById('sample3').href = sample3Results.signed_url;
+                signatureBaseStringElt.innerText = signedResult.signature_base_string;
+                signatureElt.innerText = signedResult.signature;
+                var startLineUri = uri.clone().setProtocol("").setUserInfo("").setHost("").setPort("").setAnchor("");
+                var parameterTransmissionElts = document.getElementsByName("parameter_transmission");
+                var parameterTransmission = "";
+                for (i = 0; i < parameterTransmissionElts.length; i++) {
+                    if (parameterTransmissionElts[i].checked) {
+                        var parameterTransmission = parameterTransmissionElts[i].value;
+                    }
+                }
 
-            if (window.console != null)
-               document.getElementById('hasConsole').style.display='block';
+                if (parameterTransmission == "authorization_header") {
+                    requestHeadersElt.innerText = "Authorization: " + signedResult.header;
+                } else if (parameterTransmission === "uri_query") {
+                    for (var name in signedResult.parameters) {
+                        if (name.match(/^oauth_/)) {
+                            startLineUri.addQueryParam(name, signedResult.parameters[name]);
+                        }
+                    }
+                } else if (parameterTransmission === "request_entity_body") {
+                    for (var name in signedResult.parameters) {
+                        if (name.match(/^oauth_/)) {
+                            body += "&" + encodeURIComponent(name) + "=" + encodeURIComponent(signedResult.parameters[name]);
+                        }
+                    }
+                }
+                requestStartLineElt.innerText = httpMethod + " " + startLineUri.toString();
+                requestEntityBodyElt.innerText = body;
+            };
+
+            computeElt = document.getElementById("compute_signature");
+            computeElt.onclick = compute;
+
         </script>
     </body>
 </html>
