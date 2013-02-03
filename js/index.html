@@ -2,7 +2,9 @@
     <head>
         <title>OAuthSimple Test Document</title>
         <style type="text/css">
-            #compute_signature { text-decoration: underline; }
+            #compute_signature {
+                display: block;
+            }
             label {
                 width: 150px;
                 float: left;
@@ -31,16 +33,18 @@
         browser.</p>
 
         <form>
+            Request<br/>
+            <label>HTTP method</label><input name="http_method" type="text" /><br/>
+            <label>URL</label><input name="url" type="text" /><br/>
+            <label>Content-Type</label><input name="content_type" type="text" /><br/>
+            <label>Request entity body</label><textarea name="body" type="text"></textarea><br/>
             Client credentials (consumer key and secret)<br/>
             <label>Token</label><input name="client_token" type="text" /><br/>
             <label>Secret</label><input name="client_secret" type="text" /><br/>
             Token credentials (access token and secret)<br/>
             <label>Token</label><input name="token_token" type="text" /><br/>
             <label>Secret</label><input name="token_secret" type="text" /><br/>
-            <label>HTTP method</label><input name="http_method" type="text" /><br/>
-            <label>URL</label><input name="url" type="text" /><br/>
-            <label>Content-Type</label><input name="content_type" type="text" /><br/>
-            <label>Request entity body</label><textarea name="body" type="text"></textarea><br/>
+            OAuth parameters<br/>
             <label><a href="https://tools.ietf.org/html/rfc5849#section-3.3">Nonce</a></label><input name="nonce" type="text" /><br/>
             <label>Timestamp</label><input name="timestamp" type="text" /><br />
             <label>OAuth version</label><input name="oauth_version" type="text" value="1.0" /><br/>
@@ -50,7 +54,9 @@
             <input name="parameter_transmission" type="radio" value="request_entity_body" /><label>Request entity body</label><br/>
         </form>
 
-        <div id="compute_signature">Compute signature</div>
+        <input type="submit" id="compute_signature" value="Compute Signature" />
+
+        <hr />
 
         Signature base string: <span id="signature_base_string"></span><br/>
         Signature: <span id="signature"></span><br/>
