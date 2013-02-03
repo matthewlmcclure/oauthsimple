@@ -45,6 +45,7 @@
             <label>Token</label><input name="token_token" type="text" /><br/>
             <label>Secret</label><input name="token_secret" type="text" /><br/>
             OAuth parameters<br/>
+            <label><a href="https://tools.ietf.org/html/rfc5849#section-2.3">Verifier</a></label><input name="oauth_verifier" type="text" /><br/>
             <label><a href="https://tools.ietf.org/html/rfc5849#section-3.3">Nonce</a></label><input name="nonce" type="text" /><br/>
             <label>Timestamp</label><input name="timestamp" type="text" /><br />
             <label>OAuth version</label><input name="oauth_version" type="text" value="1.0" /><br/>
@@ -91,6 +92,7 @@
                 var sharedSecret = document.getElementsByName("client_secret")[0].value;
                 var accessToken = document.getElementsByName("token_token")[0].value;
                 var tokenSecret = document.getElementsByName("token_secret")[0].value;
+                var oauth_verifier = document.getElementsByName("oauth_verifier")[0].value;
                 var nonce = document.getElementsByName("nonce")[0].value;
                 var timestamp = document.getElementsByName("timestamp")[0].value;
                 var oauth_version = document.getElementsByName("oauth_version")[0].value;
@@ -123,6 +125,9 @@
                 argumentsAsObject["oauth_nonce"] = nonce;
                 argumentsAsObject["oauth_timestamp"] = timestamp;
                 argumentsAsObject["oauth_version"] = oauth_version;
+                if (oauth_verifier !== "") {
+                    argumentsAsObject["oauth_verifier"] = oauth_verifier;
+                }
 
                 var contentType = document.getElementsByName("content_type")[0].value;
                 var body = document.getElementsByName("body")[0].value;
