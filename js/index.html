@@ -45,8 +45,9 @@
             <label>Token</label><input name="token_token" type="text" /><br/>
             <label>Secret</label><input name="token_secret" type="text" /><br/>
             OAuth parameters<br/>
-            <label><a href="https://tools.ietf.org/html/rfc5849#section-2.3">Verifier</a></label><input name="oauth_verifier" type="text" /><br/>
-            <label><a href="https://tools.ietf.org/html/rfc5849#section-3.3">Nonce</a></label><input name="nonce" type="text" /><br/>
+            <label><a href="http://tools.ietf.org/html/rfc5849#section-2.1">Callback</a></label><input name="oauth_callback" type="text" /><br/>
+            <label><a href="http://tools.ietf.org/html/rfc5849#section-2.3">Verifier</a></label><input name="oauth_verifier" type="text" /><br/>
+            <label><a href="http://tools.ietf.org/html/rfc5849#section-3.3">Nonce</a></label><input name="nonce" type="text" /><br/>
             <label>Timestamp</label><input name="timestamp" type="text" /><br />
             <label>OAuth version</label><input name="oauth_version" type="text" value="1.0" /><br/>
             <a href="https://tools.ietf.org/html/rfc5849#section-3.5">Parameter transmission</a>
@@ -65,6 +66,7 @@
         Start line: <span id="request_start_line"></span><br/>
         Headers: <div id="request_headers"></div>
         Entity body: <div id="request_entity_body"></div>
+        As curl: <div id="request_as_curl"></div>
 
         <script>
 
@@ -80,18 +82,21 @@
                 var requestStartLineElt = document.getElementById("request_start_line");
                 var requestHeadersElt = document.getElementById("request_headers");
                 var requestEntityBodyElt = document.getElementById("request_entity_body");
+                var requestAsCurlElt = document.getElementById("request_as_curl");
 
                 signatureBaseStringElt.innerText = "";
                 signatureElt.innerText = "";
                 requestStartLineElt.innerText = "";
                 requestHeadersElt.innerText = "";
                 requestEntityBodyElt.innerText = "";
+                requestAsCurlElt.innerText = "";
 
                 // Some easy defines
                 var apiKey = document.getElementsByName("client_token")[0].value;
                 var sharedSecret = document.getElementsByName("client_secret")[0].value;
                 var accessToken = document.getElementsByName("token_token")[0].value;
                 var tokenSecret = document.getElementsByName("token_secret")[0].value;
+                var oauth_callback = document.getElementsByName("oauth_callback")[0].value;
                 var oauth_verifier = document.getElementsByName("oauth_verifier")[0].value;
                 var nonce = document.getElementsByName("nonce")[0].value;
                 var timestamp = document.getElementsByName("timestamp")[0].value;
@@ -125,11 +130,13 @@
                 argumentsAsObject["oauth_nonce"] = nonce;
                 argumentsAsObject["oauth_timestamp"] = timestamp;
                 argumentsAsObject["oauth_version"] = oauth_version;
+                if (oauth_callback !== "") {
+                    argumentsAsObject["oauth_callback"] = oauth_callback;
+                }
                 if (oauth_verifier !== "") {
                     argumentsAsObject["oauth_verifier"] = oauth_verifier;
                 }
 
-                var contentType = document.getElementsByName("content_type")[0].value;
                 var body = document.getElementsByName("body")[0].value;
 
                 var signedResult = (new OAuthSimple()).sign({
@@ -148,7 +155,8 @@
 
                 signatureBaseStringElt.innerText = signedResult.signature_base_string;
                 signatureElt.innerText = signedResult.signature;
-                var startLineUri = uri.clone().setProtocol("").setUserInfo("").setHost("").setPort("").setAnchor("");
+                var requestUri = uri.clone();
+                var startLineUri = uri.clone();
                 var parameterTransmissionElts = document.getElementsByName("parameter_transmission");
                 var parameterTransmission = "";
                 for (i = 0; i < parameterTransmissionElts.length; i++) {
@@ -157,14 +165,19 @@
                     }
                 }
 
+                var authorizationHeader = "";
+                var curlHeaderArgs = ""
                 if (parameterTransmission == "authorization_header") {
-                    requestHeadersElt.innerText = "Authorization: " + signedResult.header;
+                   authorizationHeader = "Authorization: " + signedResult.header;
+                   curlHeaderArgs = " -H " + authorizationHeader;
+                   requestHeadersElt.innerText = "Authorization: " + signedResult.header;
                 } else if (parameterTransmission === "uri_query") {
                     for (var name in signedResult.parameters) {
                         if (name.match(/^oauth_/)) {
-                            startLineUri.addQueryParam(name, signedResult.parameters[name]);
+                            requestUri.addQueryParam(name, signedResult.parameters[name]);
                         }
                     }
+                    startLineUri = requestUri.clone().setProtocol("").setUserInfo("").setHost("").setPort("").setAnchor("");
                 } else if (parameterTransmission === "request_entity_body") {
                     for (var name in signedResult.parameters) {
                         if (name.match(/^oauth_/)) {
@@ -174,6 +187,18 @@
                 }
                 requestStartLineElt.innerText = httpMethod + " " + startLineUri.toString();
                 requestEntityBodyElt.innerText = body;
+
+
+                if (contentType !== "") {
+                    curlHeaderArgs +=  " -H 'Content-Type: " + contentType + "'";
+                }
+ 
+                var curlBodyArgs = "";
+                if (body !== "") {
+                    curlBodyArgs = " --data-binary '" + body + "'";
+                }
+                requestAsCurlElt.innerText = "curl -X " + httpMethod + " " +
+                    requestUri + curlHeaderArgs + curlBodyArgs;
             };
 
             computeElt = document.getElementById("compute_signature");
