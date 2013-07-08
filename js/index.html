@@ -169,7 +169,7 @@
                 var curlHeaderArgs = ""
                 if (parameterTransmission == "authorization_header") {
                    authorizationHeader = "Authorization: " + signedResult.header;
-                   curlHeaderArgs = " -H " + authorizationHeader;
+                   curlHeaderArgs = " -H '" + authorizationHeader + "'";
                    requestHeadersElt.innerText = "Authorization: " + signedResult.header;
                 } else if (parameterTransmission === "uri_query") {
                     for (var name in signedResult.parameters) {
@@ -181,7 +181,10 @@
                 } else if (parameterTransmission === "request_entity_body") {
                     for (var name in signedResult.parameters) {
                         if (name.match(/^oauth_/)) {
-                            body += "&" + encodeURIComponent(name) + "=" + encodeURIComponent(signedResult.parameters[name]);
+                            if (body !== "") {
+                                body += "&"
+                            }
+                            body += encodeURIComponent(name) + "=" + encodeURIComponent(signedResult.parameters[name]);
                         }
                     }
                 }
